@@ -44,7 +44,7 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
 
 void FBXNode::print(std::string prefix)
 {
-    cout << prefix << "{ \"name\": \"" << name << "\",\n";
+    cout << prefix << "{ \"name\": \"" << name << "\"" << (properties.size() + children.size() > 0 ? ",\n" : "\n");
     if(properties.size() > 0) {
         cout << prefix << "  \"properties\": [\n";
         bool hasPrev = false;
