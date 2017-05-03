@@ -17,6 +17,7 @@ public:
     std::vector<FBXNode> nodes;
 
     std::uint32_t getVersion();
+    void print();
 
 private:
     std::uint32_t version;

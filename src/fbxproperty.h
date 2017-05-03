@@ -39,8 +39,11 @@ public:
     FBXProperty(const std::vector<int64_t>);
     // raw / string
     FBXProperty(const std::vector<uint8_t>, uint8_t type);
+    FBXProperty(const std::string);
+    FBXProperty(const char *);
 
-    void print(std::string prefix="");
+    std::string to_string();
+    char getType();
 
     bool is_array();
 private:

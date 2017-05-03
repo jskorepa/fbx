@@ -18,10 +18,7 @@ int main(int argc, char** argv) {
         fbx::FBXDocument d;
         d.read(argv[1]);
 
-        cout << "FBX version: " << d.getVersion() << "\n";
-        for(auto node : d.nodes) {
-            node.print();
-        }
+        d.print();
 
     } catch(string s) {
         cerr << "ERROR: " << s << endl;

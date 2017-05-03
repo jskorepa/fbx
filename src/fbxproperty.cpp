@@ -5,6 +5,7 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
 namespace fbx {
 
@@ -190,36 +191,75 @@ FBXProperty::FBXProperty(const std::vector<uint8_t> a, uint8_t type): raw(a) {
     if(type != 'R' && type != 'S') {
         throw std::string("Bad argument to FBXProperty constructor");
     }
+    this->type = type;
+}
+// string
+FBXProperty::FBXProperty(const std::string a){
+    for(uint8_t v : a) {
+        raw.push_back(v);
+    }
+    this->type = 'S';
+}
+FBXProperty::FBXProperty(const char *a){
+    for(;*a != 0; a++) {
+        raw.push_back(*a);
+    }
+    this->type = 'S';
 }
 
-void FBXProperty::print(std::string prefix)
-{
-    cout << prefix << type << ": ";
-    if(type == 'Y') cout << value.i16;
-    else if(type == 'C') cout << value.boolean;
-    else if(type == 'I') cout << value.i32;
-    else if(type == 'F') cout << value.f32;
-    else if(type == 'D') cout << value.f64;
-    else if(type == 'L') cout << value.i64;
-    else if(type == 'R') {
-        for(char c : raw) {
-            cout << std::to_string(c) << " ";
-        }
-    } else if(type == 'S') {
-        cout << "(" << raw.size() << ") ";
-        for(char c : raw) {
-            cout << c;
-        }
-    } else {
-        for(auto e : values) {
-            if(type == 'f') cout << e.f32;
-            else if(type == 'd') cout << e.f64;
-            else if(type == 'l') cout << e.i64;
-            else if(type == 'i') cout << e.i32;
-            else if(type == 'b') cout << e.boolean;
-        }
+namespace {
+    char base16Letter(uint8_t n) {
+        n %= 16;
+        if(n <= 9) return n + '0';
+        return n + 'a' - 10;
     }
-    cout << "\n";
+    std::string base16Number(uint8_t n) {
+        return std::string() + base16Letter(n >> 4) + base16Letter(n);
+    }
+}
+
+char FBXProperty::getType()
+{
+    return type;
+}
+
+string FBXProperty::to_string()
+{
+    if(type == 'Y') return std::to_string(value.i16);
+    else if(type == 'C') return value.boolean ? "true" : "false";
+    else if(type == 'I') return std::to_string(value.i32);
+    else if(type == 'F') return std::to_string(value.f32);
+    else if(type == 'D') return std::to_string(value.f64);
+    else if(type == 'L') return std::to_string(value.i64);
+    else if(type == 'R') {
+        string s("\"");
+        for(char c : raw) {
+            s += std::to_string(c) + " ";
+        }
+        return s + "\"";
+    } else if(type == 'S') {
+        string s("\"");
+        for(uint8_t c : raw) {
+            if(c == '\\') s += "\\\\";
+            else if(c >= 32 && c <= 126) s += c;
+            else s = s + "\\u00" + base16Number(c);
+        }
+        return s + "\"";
+    } else {
+        string s("[");
+        bool hasPrev = false;
+        for(auto e : values) {
+            if(hasPrev) s += ", ";
+            if(type == 'f') s += std::to_string(e.f32);
+            else if(type == 'd') s += std::to_string(e.f64);
+            else if(type == 'l') s += std::to_string(e.i64);
+            else if(type == 'i') s += std::to_string(e.i32);
+            else if(type == 'b') s += (e.boolean ? "true" : "false");
+            hasPrev = true;
+        }
+        return s+"]";
+    }
+    throw std::string("Invalid property");
 }
 
 } // namespace fbx
