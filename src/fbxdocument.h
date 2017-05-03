@@ -10,9 +10,13 @@ class FBXDocument
 public:
     FBXDocument();
     void read(std::ifstream &input);
-    void read(std::string &fname);
+    void read(std::string fname);
+
+    void createBasicStructure();
 
     std::vector<FBXNode> nodes;
+
+    std::uint32_t getVersion();
 
 private:
     std::uint32_t version;

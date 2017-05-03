@@ -14,7 +14,7 @@ FBXDocument::FBXDocument()
     version = 7400;
 }
 
-void FBXDocument::read(string &fname)
+void FBXDocument::read(string fname)
 {
     ifstream file;
 
@@ -51,7 +51,6 @@ void FBXDocument::read(std::ifstream &input)
     if(!checkMagic(reader)) throw std::string("Not a FBX file");
 
     uint32_t version = reader.readUint32();
-    cout << "Version: " << version << endl;
 
     uint32_t maxVersion = 7400;
     if(version > maxVersion) throw "Unsupported FBX version "+std::to_string(version)
@@ -61,8 +60,24 @@ void FBXDocument::read(std::ifstream &input)
     do{
         FBXNode node;
         start_offset += node.read(input, start_offset);
-        cout << "node: \"" << node.name << "\"\n";
+        if(node.isNull()) break;
         nodes.push_back(node);
-    } while(!nodes.at(nodes.size()-1).isNull());
+    } while(true);
 }
+
+void FBXDocument::createBasicStructure()
+{
+    FBXNode headerExtension;
+    {
+        FBXNode headerVersion;
+        headerVersion.properties.push_back(FBXProperty((int32_t) 1003));
+        FBXNode version;
+    }
+}
+
+std::uint32_t FBXDocument::getVersion()
+{
+    return version;
+}
+
 } // namespace fbx

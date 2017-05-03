@@ -12,6 +12,11 @@ set(SOURCE_FILES fbxdocument.cpp fbxnode.cpp fbxutil.cpp fbxproperty.cpp)
 
 add_executable(fbx-writer main.cpp ${SOURCE_FILES})
 
+add_executable(fbxdump fbxdump.cpp ${SOURCE_FILES})
+
 target_link_libraries( fbx-writer
                        ${Boost_LIBRARIES}
                        ${ZLIB_LIBRARIES})
+
+target_link_libraries( fbxdump
+                      ${ZLIB_LIBRARIES})

@@ -17,6 +17,7 @@ public:
     std::vector<FBXNode> children;
     std::vector<FBXProperty> properties;
     std::string name;
+
 };
 
 } // namespace fbx

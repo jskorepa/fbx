@@ -14,7 +14,7 @@ namespace { // helpers for reading properties
         FBXPropertyValue value;
         if(type == 'Y') { // 2 byte signed integer
             value.i16 = reader.readInt16();
-        } else if(type == 'C') { // 1 bit boolean (1: true, 0: false) encoded as the LSB of a 1 Byte value.
+        } else if(type == 'C' || type == 'B') { // 1 bit boolean (1: true, 0: false) encoded as the LSB of a 1 Byte value.
             value.boolean = reader.readUint8() != 0;
         } else if(type == 'I') { // 4 byte signed Integer
             value.i32 = reader.readInt32();
@@ -139,6 +139,56 @@ FBXProperty::FBXProperty(std::ifstream &input)
                 values.push_back(readPrimitiveValue(reader, type - ('a'-'A')));
             }
         }
+    }
+}
+
+// primitive values
+FBXProperty::FBXProperty(int16_t a) { type = 'Y'; value.i16 = a; }
+FBXProperty::FBXProperty(bool a) { type = 'C'; value.boolean = a; }
+FBXProperty::FBXProperty(int32_t a) { type = 'I'; value.i32 = a; }
+FBXProperty::FBXProperty(float a) { type = 'F'; value.f32 = a; }
+FBXProperty::FBXProperty(double a) { type = 'D'; value.f64 = a; }
+FBXProperty::FBXProperty(int64_t a) { type = 'L'; value.i64 = a; }
+// arrays
+FBXProperty::FBXProperty(const std::vector<bool> a) : type('b'), values(a.size()) {
+    for(auto el : a) {
+        FBXPropertyValue v;
+        v.boolean = el;
+        values.push_back(v);
+    }
+}
+FBXProperty::FBXProperty(const std::vector<int32_t> a) : type('i'), values(a.size()) {
+    for(auto el : a) {
+        FBXPropertyValue v;
+        v.i32 = el;
+        values.push_back(v);
+    }
+}
+FBXProperty::FBXProperty(const std::vector<float> a) : type('f'), values(a.size()) {
+    for(auto el : a) {
+        FBXPropertyValue v;
+        v.f32 = el;
+        values.push_back(v);
+    }
+}
+FBXProperty::FBXProperty(const std::vector<double> a) : type('d'), values(a.size()) {
+    for(auto el : a) {
+        FBXPropertyValue v;
+        v.f64 = el;
+        values.push_back(v);
+    }
+}
+FBXProperty::FBXProperty(const std::vector<int64_t> a) : type('l'), values(a.size()) {
+    for(auto el : a) {
+        FBXPropertyValue v;
+        v.i64 = el;
+        values.push_back(v);
+    }
+}
+// raw / string
+FBXProperty::FBXProperty(const std::vector<uint8_t> a, uint8_t type): raw(a) {
+    if(type != 'R' && type != 'S') {
+        throw std::string("Bad argument to FBXProperty constructor");
     }
 }
 

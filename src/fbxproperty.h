@@ -24,6 +24,21 @@ class FBXProperty
 {
 public:
     FBXProperty(std::ifstream &input);
+    // primitive values
+    FBXProperty(int16_t);
+    FBXProperty(bool);
+    FBXProperty(int32_t);
+    FBXProperty(float);
+    FBXProperty(double);
+    FBXProperty(int64_t);
+    // arrays
+    FBXProperty(const std::vector<bool>);
+    FBXProperty(const std::vector<int32_t>);
+    FBXProperty(const std::vector<float>);
+    FBXProperty(const std::vector<double>);
+    FBXProperty(const std::vector<int64_t>);
+    // raw / string
+    FBXProperty(const std::vector<uint8_t>, uint8_t type);
 
     void print(std::string prefix="");
 
