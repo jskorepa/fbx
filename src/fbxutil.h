@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <vector>
 
 namespace fbx {
     // WARNING:
@@ -14,8 +15,8 @@ namespace fbx {
     // it also assumes that signed integers are two's complement
     class Reader {
     public:
-        Reader(std::ifstream *input);
-        Reader(char *input);
+        Reader(std::ifstream *input, std::vector<uint8_t> *copy=NULL);
+        Reader(char *input, std::vector<uint8_t> *copy=NULL);
 
         std::uint8_t readUint8();
         std::int8_t readInt8();
@@ -27,12 +28,14 @@ namespace fbx {
         std::string readString(uint32_t length);
         float readFloat();
         double readDouble();
-    private:
+
         void read(char*, uint32_t);
+    private:
         uint8_t getc();
         std::ifstream *ifstream;
         char *buffer;
         uint32_t i;
+        std::vector<uint8_t> *copy;
     };
     class Writer {
     public:

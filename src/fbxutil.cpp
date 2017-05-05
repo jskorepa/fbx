@@ -139,12 +139,12 @@ double Reader::readDouble()
     return f;
 }
 
-Reader::Reader(std::ifstream *input)
-    :ifstream(input),buffer(NULL),i(0)
+Reader::Reader(std::ifstream *input, std::vector<uint8_t> *_copy)
+    :ifstream(input),buffer(NULL),i(0),copy(_copy)
 {}
 
-Reader::Reader(char *input)
-    :ifstream(NULL),buffer(input),i(0)
+Reader::Reader(char *input, std::vector<uint8_t> *_copy)
+    :ifstream(NULL),buffer(input),i(0),copy(_copy)
 {}
 
 uint8_t Reader::getc()
@@ -152,14 +152,22 @@ uint8_t Reader::getc()
     uint8_t tmp;
     if(ifstream != NULL) (*ifstream) >> tmp;
     else tmp = buffer[i++];
+    if(copy != NULL) copy->push_back(tmp);
     return tmp;
 }
 
 void Reader::read(char *s, uint32_t n)
 {
-    if(ifstream != NULL) ifstream->read(s, n);
-    else for(uint32_t a = 0; a < n; a++) {
+    if(ifstream != NULL) {
+        ifstream->read(s, n);
+        if(copy != NULL) {
+            for(uint32_t a = 0; a < n; a++) {
+                copy->push_back(s[a]);
+            }
+        }
+    } else for(uint32_t a = 0; a < n; a++) {
         s[a] = buffer[i++];
+        if(copy != NULL) copy->push_back(s[a]);
     }
 }
 

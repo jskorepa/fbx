@@ -53,7 +53,7 @@ namespace { // helpers for reading properties
         }
     };
 
-    int inf(std::ifstream &source, char *out, uint32_t compressedLength)
+    int inf(Reader &source, char *out, uint32_t compressedLength)
     {
         uint32_t bufsize = compressedLength;
 
@@ -108,7 +108,7 @@ namespace { // helpers for reading properties
 
 FBXProperty::FBXProperty(std::ifstream &input)
 {
-    Reader reader(&input);
+    Reader reader(&input, &copy);
     type = reader.readUint8();
     std::cout << "  " << type << "\n";
     if(type == 'S' || type == 'R') {
@@ -128,7 +128,7 @@ FBXProperty::FBXProperty(std::ifstream &input)
             char *decompressed = (char*) malloc(compressedLength*100);
             if(decompressed == NULL) throw std::string("Malloc failed");
             BufferAutoFree bufferAutoFree(decompressed);
-            int infRet = inf(input, decompressed, compressedLength);
+            int infRet = inf(reader, decompressed, compressedLength);
             Reader r(decompressed);
 
             for(uint32_t i = 0; i < arrayLength; i++) {
@@ -147,7 +147,16 @@ FBXProperty::FBXProperty(std::ifstream &input)
 uint32_t FBXProperty::write(std::ofstream &output)
 {
     Writer writer(&output);
+    if(copy.size() > 0) {
+        std::cout << "  " << type << " (copy buffer " << copy.size() << ")\n";
+        for(uint8_t c : copy) {
+            writer.write((uint8_t) c);
+        }
+        return copy.size();
+    }
+    throw std::string("wtf?");
     std::cout << "  " << type << "\n";
+
     writer.write(type);
     if(type == 'Y') {
         writer.write(value.i16);
@@ -318,6 +327,7 @@ string FBXProperty::to_string()
 
 uint32_t FBXProperty::getBytes()
 {
+    if(copy.size() > 0) return copy.size();
     if(type == 'Y') return 2 + 1; // 2 for int16, 1 for type spec
     else if(type == 'C') return 1 + 1;
     else if(type == 'I') return 4 + 1;

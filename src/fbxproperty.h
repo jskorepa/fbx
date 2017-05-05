@@ -50,6 +50,8 @@ public:
     bool is_array();
     uint32_t getBytes();
 private:
+    std::vector<uint8_t> copy;
+
     uint8_t type;
     FBXPropertyValue value;
     std::vector<uint8_t> raw;
