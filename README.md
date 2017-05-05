@@ -1,9 +1,10 @@
-# C++ Library for reading FBX files
+# C++ Library for reading and writing FBX files
 
-This library allows you to read fbx files.
-In future I would like to also add capability to write fbx.
+This library allows you to read and write fbx files.
 
-Also includes fbxdump which allows to inspect fbx files in json format.
+It currently supports full fbx binary format. It works even with larger files.
+
+Also includes fbxdump which allows you to inspect fbx files in json format.
 
 # References
 
