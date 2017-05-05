@@ -84,6 +84,53 @@ void FBXDocument::read(std::ifstream &input)
     } while(true);
 }
 
+namespace {
+    void encrypt(uint8_t *a, uint8_t *b, int length)
+    {
+        uint8_t c = 64;
+        for (int i = 0; i < length; i++)
+        {
+            a[i] = (uint8_t)(a[i] ^ (uint8_t)(c ^ b[i]));
+            c = a[i];
+        }
+    }
+
+    void numberWithPlaces(uint8_t *target, int number, int places)
+    {
+        for(int i = 0; i < places; i++) {
+            target[i] = number%10 + '0';
+            number /= 10;
+        }
+    }
+
+    void writerFooter(
+        Writer &writer,
+        int year = 0, int month = 0, int day = 0,
+        int hour = 0, int minute = 0, int second = 0, int millisecond = 0
+    ) {
+        uint8_t footer[] = { 0x58, 0xAB, 0xA9, 0xF0, 0x6C, 0xA2, 0xD8, 0x3F, 0x4D, 0x47, 0x49, 0xA3, 0xB4, 0xB2, 0xE7, 0x3D };
+        uint8_t key[] = { 0xE2, 0x4F, 0x7B, 0x5F, 0xCD, 0xE4, 0xC8, 0x6D, 0xDB, 0xD8, 0xFB, 0xD7, 0x40, 0x58, 0xC6, 0x78 };
+
+        uint8_t time[16];
+        numberWithPlaces(time, second, 2);
+        numberWithPlaces(time+2, month, 2);
+        numberWithPlaces(time+4, hour, 2);
+        numberWithPlaces(time+6, day, 2);
+        numberWithPlaces(time+8, millisecond/10, 2);
+        numberWithPlaces(time+10, year, 4);
+        numberWithPlaces(time+14, minute, 2);
+
+        encrypt(footer, time, sizeof(footer));
+        encrypt(footer, key, sizeof(footer));
+        encrypt(footer, time, sizeof(footer));
+
+        for(unsigned int i = 0; i < sizeof(time); i++) {
+            writer.write((uint8_t) footer[i]);
+        }
+    }
+
+}
+
 void FBXDocument::write(std::ofstream &output)
 {
     Writer writer(&output);
@@ -99,7 +146,7 @@ void FBXDocument::write(std::ofstream &output)
     }
     FBXNode nullNode;
     offset += nullNode.write(output, offset);
-    // footer... :/
+    writerFooter(writer);
 }
 
 void FBXDocument::createBasicStructure()

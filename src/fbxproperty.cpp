@@ -110,6 +110,7 @@ FBXProperty::FBXProperty(std::ifstream &input)
 {
     Reader reader(&input);
     type = reader.readUint8();
+    std::cout << "  " << type << "\n";
     if(type == 'S' || type == 'R') {
         uint32_t length = reader.readUint32();
         for(uint32_t i = 0; i < length; i++){
@@ -146,6 +147,7 @@ FBXProperty::FBXProperty(std::ifstream &input)
 uint32_t FBXProperty::write(std::ofstream &output)
 {
     Writer writer(&output);
+    std::cout << "  " << type << "\n";
     writer.write(type);
     if(type == 'Y') {
         writer.write(value.i16);
@@ -172,6 +174,17 @@ uint32_t FBXProperty::write(std::ofstream &output)
         }
         return raw.size() + 1;
     } else {
+        writer.write((uint32_t) values.size()); // arrayLength
+        writer.write((uint32_t) 0); // encoding // TODO: support compression
+        uint32_t compressedLength = 0;
+        if(type == 'f') compressedLength = values.size() * 4 + 1;
+        else if(type == 'd') compressedLength = values.size() * 8 + 1;
+        else if(type == 'l') compressedLength = values.size() * 8 + 1;
+        else if(type == 'i') compressedLength = values.size() * 4 + 1;
+        else if(type == 'b') compressedLength = values.size() * 1 + 1;
+        else throw std::string("Invalid property");
+        writer.write(compressedLength);
+
         for(auto e : values) {
             if(type == 'f') writer.write(e.f32);
             else if(type == 'd') writer.write(e.f64);
@@ -180,12 +193,7 @@ uint32_t FBXProperty::write(std::ofstream &output)
             else if(type == 'b') writer.write((uint8_t)(e.boolean ? 1 : 0));
             else throw std::string("Invalid property");
         }
-        if(type == 'f') return values.size() * 4 + 1;
-        else if(type == 'd') return values.size() * 8 + 1;
-        else if(type == 'l') return values.size() * 8 + 1;
-        else if(type == 'i') return values.size() * 4 + 1;
-        else if(type == 'b') return values.size() * 1 + 1;
-        else throw std::string("Invalid property");
+        return compressedLength;
     }
 }
 

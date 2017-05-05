@@ -28,6 +28,13 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
     name = reader.readString(nameLength);
     bytes += 13 + nameLength;
 
+    std::cout << "so: " << start_offset
+              << "\tbytes: " << (endOffset == 0 ? 0 : (endOffset - start_offset))
+              << "\tnumProp: " << numProperties
+              << "\tpropListLen: " << propertyListLength
+              << "\tnameLen: " << std::to_string(nameLength)
+              << "\tname: " << name << "\n";
+
     for(uint32_t i = 0; i < numProperties; i++) {
         addProperty(FBXProperty(input));
     }
@@ -36,7 +43,6 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
     while(start_offset + bytes < endOffset) {
         FBXNode child;
         bytes += child.read(input, start_offset + bytes);
-        if(child.isNull()) break;
         addChild(std::move(child));
     }
     return bytes;
@@ -46,12 +52,22 @@ uint32_t FBXNode::write(std::ofstream &output, uint32_t start_offset)
 {
     Writer writer(&output);
 
+    if(isNull()) {
+        std::cout << "so: " << start_offset
+                  << "\tbytes: 0"
+                  << "\tnumProp: 0"
+                  << "\tpropListLen: 0"
+                  << "\tnameLen: 0"
+                  << "\tname: \n";
+        for(int i = 0; i < 13; i++) writer.write((uint8_t) 0);
+        return 13;
+    }
+
     uint32_t propertyListLength = 0;
     for(auto prop : properties) propertyListLength += prop.getBytes();
     uint32_t bytes = 13 + name.length() + propertyListLength;
     for(auto child : children) bytes += child.getBytes();
 
-    if(children.size() > 0) bytes += 13; // terminating null record
     if(bytes != getBytes()) throw std::string("bytes != getBytes()");
     writer.write(start_offset + bytes); // endOffset
     writer.write((uint32_t) properties.size()); // numProperties
@@ -59,14 +75,17 @@ uint32_t FBXNode::write(std::ofstream &output, uint32_t start_offset)
     writer.write((uint8_t) name.length());
     writer.write(name);
 
+    std::cout << "so: " << start_offset
+              << "\tbytes: " << bytes
+              << "\tnumProp: " << properties.size()
+              << "\tpropListLen: " << propertyListLength
+              << "\tnameLen: " << name.length()
+              << "\tname: " << name << "\n";
+
     bytes = 13 + name.length() + propertyListLength;
 
     for(auto prop : properties) prop.write(output);
     for(auto child : children) bytes += child.write(output,  start_offset + bytes);
-    if(children.size() > 0) {
-        FBXNode nullNode;
-        bytes += nullNode.write(output, start_offset + bytes - 13);
-    }
 
     return bytes;
 }
@@ -156,7 +175,6 @@ uint32_t FBXNode::getBytes() {
     for(auto prop : properties) {
         bytes += prop.getBytes();
     }
-    if(children.size() > 0) bytes += 13;
     return bytes;
 }
 
