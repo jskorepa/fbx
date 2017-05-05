@@ -15,8 +15,8 @@ namespace fbx {
     // it also assumes that signed integers are two's complement
     class Reader {
     public:
-        Reader(std::ifstream *input, std::vector<uint8_t> *copy=NULL);
-        Reader(char *input, std::vector<uint8_t> *copy=NULL);
+        Reader(std::ifstream *input);
+        Reader(char *input);
 
         std::uint8_t readUint8();
         std::int8_t readInt8();
@@ -35,7 +35,6 @@ namespace fbx {
         std::ifstream *ifstream;
         char *buffer;
         uint32_t i;
-        std::vector<uint8_t> *copy;
     };
     class Writer {
     public:

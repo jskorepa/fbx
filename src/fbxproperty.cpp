@@ -31,6 +31,25 @@ namespace { // helpers for reading properties
         return value;
     }
 
+    uint32_t arrayElementSize(char type)
+    {
+        if(type == 'Y') { // 2 byte signed integer
+            return 2;
+        } else if(type == 'C' || type == 'B') { // 1 bit boolean (1: true, 0: false) encoded as the LSB of a 1 Byte value.
+            return 1;
+        } else if(type == 'I') { // 4 byte signed Integer
+            return 4;
+        } else if(type == 'F') { // 4 byte single-precision IEEE 754 number
+            return 4;
+        } else if(type == 'D') { // 8 byte double-precision IEEE 754 number
+            return 8;
+        } else if(type == 'L') { // 8 byte signed Integer
+            return 8;
+        } else {
+            return 0;
+        }
+    }
+
     class STRMAutoCloser
     {
     public:
@@ -45,70 +64,18 @@ namespace { // helpers for reading properties
     class BufferAutoFree
     {
     public:
-        char *buffer;
-        BufferAutoFree(char *buf):buffer(buf) {}
+        uint8_t *buffer;
+        BufferAutoFree(uint8_t *buf):buffer(buf) {}
 
         ~BufferAutoFree() {
             free(buffer);
         }
     };
-
-    int inf(Reader &source, char *out, uint32_t compressedLength)
-    {
-        uint32_t bufsize = compressedLength;
-
-        int ret;
-        z_stream strm;
-        char in[bufsize];
-
-        /* allocate inflate state */
-        strm.zalloc = Z_NULL;
-        strm.zfree = Z_NULL;
-        strm.opaque = Z_NULL;
-        strm.avail_in = 0;
-        strm.next_in = Z_NULL;
-        ret = inflateInit(&strm);
-        if (ret != Z_OK)
-            return ret;
-        STRMAutoCloser autocloser(strm);
-
-        /* decompress until deflate stream ends or end of file */
-        do {
-            source.read(in, bufsize);
-            strm.avail_in = bufsize;
-            if (strm.avail_in == 0)
-                break;
-            strm.next_in = (unsigned char*)in;
-
-            /* run inflate() on input until output buffer not full */
-            do {
-                strm.avail_out = bufsize;
-                strm.next_out = (unsigned char*) out;
-                ret = inflate(&strm, Z_NO_FLUSH);
-                if(ret == Z_STREAM_ERROR) throw std::string("ZLiB ERROR");
-                switch (ret) {
-                case Z_NEED_DICT:
-                    ret = Z_DATA_ERROR;
-                    /* fallthrough */
-                case Z_DATA_ERROR:
-                case Z_MEM_ERROR:
-                    (void)inflateEnd(&strm);
-                    return ret;
-                }
-            } while (strm.avail_out == 0);
-
-            /* done when inflate() says it's done */
-        } while (ret != Z_STREAM_END);
-
-        /* clean up and return */
-
-        return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
-    }
 }
 
 FBXProperty::FBXProperty(std::ifstream &input)
 {
-    Reader reader(&input, &copy);
+    Reader reader(&input);
     type = reader.readUint8();
     // std::cout << "  " << type << "\n";
     if(type == 'S' || type == 'R') {
@@ -120,23 +87,31 @@ FBXProperty::FBXProperty(std::ifstream &input)
     } else if(type < 'Z') { // primitive types
         value = readPrimitiveValue(reader, type);
     } else {
-        uint32_t arrayLength = reader.readUint32();
-        uint32_t encoding = reader.readUint32();
+        uint32_t arrayLength = reader.readUint32(); // number of elements in array
+        uint32_t encoding = reader.readUint32(); // 0 .. uncompressed, 1 .. zlib-compressed
         uint32_t compressedLength = reader.readUint32();
         if(encoding) {
-            isSourceCompressed = true;
-            //reader.readString(compressedLength);
-            char *decompressed = (char*) malloc(compressedLength*100);
-            if(decompressed == NULL) throw std::string("Malloc failed");
-            BufferAutoFree bufferAutoFree(decompressed);
-            int infRet = inf(reader, decompressed, compressedLength);
-            Reader r(decompressed);
+            uint64_t uncompressedLength = arrayElementSize(type - ('a'-'A')) * arrayLength;
+
+            uint8_t *decompressedBuffer = (uint8_t*) malloc(uncompressedLength);
+            if(decompressedBuffer == NULL) throw std::string("Malloc failed");
+            BufferAutoFree baf(decompressedBuffer);
+
+            uint8_t compressedBuffer[compressedLength];
+            reader.read((char*)compressedBuffer, compressedLength);
+
+            uint64_t destLen = uncompressedLength;
+            uint64_t srcLen = compressedLength;
+            uncompress2(decompressedBuffer, &destLen, compressedBuffer, &srcLen);
+
+            if(srcLen != compressedLength) throw std::string("compressedLength does not match data");
+            if(destLen != uncompressedLength) throw std::string("uncompressedLength does not match data");
+
+            Reader r((char*)decompressedBuffer);
 
             for(uint32_t i = 0; i < arrayLength; i++) {
                 values.push_back(readPrimitiveValue(r, type - ('a'-'A')));
             }
-
-            if(infRet) throw std::string("Zlib inflate failed");
         } else {
             for(uint32_t i = 0; i < arrayLength; i++) {
                 values.push_back(readPrimitiveValue(reader, type - ('a'-'A')));
@@ -145,43 +120,28 @@ FBXProperty::FBXProperty(std::ifstream &input)
     }
 }
 
-uint32_t FBXProperty::write(std::ofstream &output)
+void FBXProperty::write(std::ofstream &output)
 {
     Writer writer(&output);
-    if(copy.size() > 0 && isSourceCompressed) {
-        // std::cout << "  " << type << " (copy buffer " << copy.size() << ")\n";
-        for(uint8_t c : copy) {
-            writer.write((uint8_t) c);
-        }
-        return copy.size();
-    }
-    // std::cout << "  " << type << "\n";
 
     writer.write(type);
     if(type == 'Y') {
         writer.write(value.i16);
-        return 3;
     } else if(type == 'C') {
         writer.write((uint8_t)(value.boolean ? 1 : 0));
-        return 2;
     } else if(type == 'I') {
         writer.write(value.i32);
-        return 5;
     } else if(type == 'F') {
         writer.write(value.f32);
-        return 5;
     } else if(type == 'D') {
         writer.write(value.f64);
-        return 9;
     } else if(type == 'L') {
         writer.write(value.i64);
-        return 9;
     } else if(type == 'R' || type == 'S') {
         writer.write((uint32_t)raw.size());
         for(char c : raw) {
             writer.write((uint8_t)c);
         }
-        return raw.size() + 1;
     } else {
         writer.write((uint32_t) values.size()); // arrayLength
         writer.write((uint32_t) 0); // encoding // TODO: support compression
@@ -202,7 +162,6 @@ uint32_t FBXProperty::write(std::ofstream &output)
             else if(type == 'b') writer.write((uint8_t)(e.boolean ? 1 : 0));
             else throw std::string("Invalid property");
         }
-        return compressedLength + 1;
     }
 }
 
@@ -327,7 +286,6 @@ string FBXProperty::to_string()
 
 uint32_t FBXProperty::getBytes()
 {
-    if(copy.size() > 0) return copy.size();
     if(type == 'Y') return 2 + 1; // 2 for int16, 1 for type spec
     else if(type == 'C') return 1 + 1;
     else if(type == 'I') return 4 + 1;
@@ -336,11 +294,11 @@ uint32_t FBXProperty::getBytes()
     else if(type == 'L') return 8 + 1;
     else if(type == 'R') return raw.size() + 5;
     else if(type == 'S') return raw.size() + 5;
-    else if(type == 'f') return values.size() * 4 + 1;
-    else if(type == 'd') return values.size() * 8 + 1;
-    else if(type == 'l') return values.size() * 8 + 1;
-    else if(type == 'i') return values.size() * 4 + 1;
-    else if(type == 'b') return values.size() * 1 + 1;
+    else if(type == 'f') return values.size() * 4 + 13;
+    else if(type == 'd') return values.size() * 8 + 13;
+    else if(type == 'l') return values.size() * 8 + 13;
+    else if(type == 'i') return values.size() * 4 + 13;
+    else if(type == 'b') return values.size() * 1 + 13;
     throw std::string("Invalid property");
 }
 
