@@ -51,6 +51,7 @@ public:
     uint32_t getBytes();
 private:
     std::vector<uint8_t> copy;
+    bool isSourceCompressed = false;
 
     uint8_t type;
     FBXPropertyValue value;

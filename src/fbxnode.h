@@ -49,6 +49,9 @@ public:
 
     void addChild(FBXNode child);
     uint32_t getBytes();
+
+    const std::vector<FBXNode> getChildren();
+    const std::string getName();
 private:
     std::vector<FBXNode> children;
     std::vector<FBXProperty> properties;

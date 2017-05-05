@@ -28,12 +28,12 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
     name = reader.readString(nameLength);
     bytes += 13 + nameLength;
 
-    std::cout << "so: " << start_offset
-              << "\tbytes: " << (endOffset == 0 ? 0 : (endOffset - start_offset))
-              << "\tnumProp: " << numProperties
-              << "\tpropListLen: " << propertyListLength
-              << "\tnameLen: " << std::to_string(nameLength)
-              << "\tname: " << name << "\n";
+    //std::cout << "so: " << start_offset
+    //          << "\tbytes: " << (endOffset == 0 ? 0 : (endOffset - start_offset))
+    //          << "\tnumProp: " << numProperties
+    //          << "\tpropListLen: " << propertyListLength
+    //          << "\tnameLen: " << std::to_string(nameLength)
+    //          << "\tname: " << name << "\n";
 
     for(uint32_t i = 0; i < numProperties; i++) {
         addProperty(FBXProperty(input));
@@ -53,12 +53,12 @@ uint32_t FBXNode::write(std::ofstream &output, uint32_t start_offset)
     Writer writer(&output);
 
     if(isNull()) {
-        std::cout << "so: " << start_offset
-                  << "\tbytes: 0"
-                  << "\tnumProp: 0"
-                  << "\tpropListLen: 0"
-                  << "\tnameLen: 0"
-                  << "\tname: \n";
+        //std::cout << "so: " << start_offset
+        //          << "\tbytes: 0"
+        //          << "\tnumProp: 0"
+        //          << "\tpropListLen: 0"
+        //          << "\tnameLen: 0"
+        //          << "\tname: \n";
         for(int i = 0; i < 13; i++) writer.write((uint8_t) 0);
         return 13;
     }
@@ -75,12 +75,12 @@ uint32_t FBXNode::write(std::ofstream &output, uint32_t start_offset)
     writer.write((uint8_t) name.length());
     writer.write(name);
 
-    std::cout << "so: " << start_offset
-              << "\tbytes: " << bytes
-              << "\tnumProp: " << properties.size()
-              << "\tpropListLen: " << propertyListLength
-              << "\tnameLen: " << name.length()
-              << "\tname: " << name << "\n";
+    //std::cout << "so: " << start_offset
+    //          << "\tbytes: " << bytes
+    //          << "\tnumProp: " << properties.size()
+    //          << "\tpropListLen: " << propertyListLength
+    //          << "\tnameLen: " << name.length()
+    //          << "\tname: " << name << "\n";
 
     bytes = 13 + name.length() + propertyListLength;
 
@@ -176,6 +176,16 @@ uint32_t FBXNode::getBytes() {
         bytes += prop.getBytes();
     }
     return bytes;
+}
+
+const std::vector<FBXNode> FBXNode::getChildren()
+{
+    return children;
+}
+
+const std::string FBXNode::getName()
+{
+    return name;
 }
 
 } // namespace fbx

@@ -110,7 +110,7 @@ FBXProperty::FBXProperty(std::ifstream &input)
 {
     Reader reader(&input, &copy);
     type = reader.readUint8();
-    std::cout << "  " << type << "\n";
+    // std::cout << "  " << type << "\n";
     if(type == 'S' || type == 'R') {
         uint32_t length = reader.readUint32();
         for(uint32_t i = 0; i < length; i++){
@@ -124,6 +124,7 @@ FBXProperty::FBXProperty(std::ifstream &input)
         uint32_t encoding = reader.readUint32();
         uint32_t compressedLength = reader.readUint32();
         if(encoding) {
+            isSourceCompressed = true;
             //reader.readString(compressedLength);
             char *decompressed = (char*) malloc(compressedLength*100);
             if(decompressed == NULL) throw std::string("Malloc failed");
@@ -147,15 +148,14 @@ FBXProperty::FBXProperty(std::ifstream &input)
 uint32_t FBXProperty::write(std::ofstream &output)
 {
     Writer writer(&output);
-    if(copy.size() > 0) {
-        std::cout << "  " << type << " (copy buffer " << copy.size() << ")\n";
+    if(copy.size() > 0 && isSourceCompressed) {
+        // std::cout << "  " << type << " (copy buffer " << copy.size() << ")\n";
         for(uint8_t c : copy) {
             writer.write((uint8_t) c);
         }
         return copy.size();
     }
-    throw std::string("wtf?");
-    std::cout << "  " << type << "\n";
+    // std::cout << "  " << type << "\n";
 
     writer.write(type);
     if(type == 'Y') {
@@ -186,11 +186,11 @@ uint32_t FBXProperty::write(std::ofstream &output)
         writer.write((uint32_t) values.size()); // arrayLength
         writer.write((uint32_t) 0); // encoding // TODO: support compression
         uint32_t compressedLength = 0;
-        if(type == 'f') compressedLength = values.size() * 4 + 1;
-        else if(type == 'd') compressedLength = values.size() * 8 + 1;
-        else if(type == 'l') compressedLength = values.size() * 8 + 1;
-        else if(type == 'i') compressedLength = values.size() * 4 + 1;
-        else if(type == 'b') compressedLength = values.size() * 1 + 1;
+        if(type == 'f') compressedLength = values.size() * 4;
+        else if(type == 'd') compressedLength = values.size() * 8;
+        else if(type == 'l') compressedLength = values.size() * 8;
+        else if(type == 'i') compressedLength = values.size() * 4;
+        else if(type == 'b') compressedLength = values.size() * 1;
         else throw std::string("Invalid property");
         writer.write(compressedLength);
 
@@ -202,7 +202,7 @@ uint32_t FBXProperty::write(std::ofstream &output)
             else if(type == 'b') writer.write((uint8_t)(e.boolean ? 1 : 0));
             else throw std::string("Invalid property");
         }
-        return compressedLength;
+        return compressedLength + 1;
     }
 }
 
