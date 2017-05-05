@@ -12,6 +12,7 @@ public:
     FBXNode(std::string name);
 
     std::uint32_t read(std::ifstream &input, uint32_t start_offset);
+    std::uint32_t write(std::ofstream &output, uint32_t start_offset);
     void print(std::string prefix="");
     bool isNull();
 
@@ -29,6 +30,7 @@ public:
     void addProperty(const std::vector<uint8_t>, uint8_t type);
     void addProperty(const std::string);
     void addProperty(const char*);
+    void addProperty(FBXProperty);
 
     void addPropertyNode(const std::string name, int16_t);
     void addPropertyNode(const std::string name, bool);
@@ -45,10 +47,12 @@ public:
     void addPropertyNode(const std::string name, const std::string);
     void addPropertyNode(const std::string name, const char*);
 
+    void addChild(FBXNode child);
+    uint32_t getBytes();
+private:
     std::vector<FBXNode> children;
     std::vector<FBXProperty> properties;
     std::string name;
-
 };
 
 } // namespace fbx

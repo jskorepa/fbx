@@ -143,6 +143,52 @@ FBXProperty::FBXProperty(std::ifstream &input)
     }
 }
 
+uint32_t FBXProperty::write(std::ofstream &output)
+{
+    Writer writer(&output);
+    writer.write(type);
+    if(type == 'Y') {
+        writer.write(value.i16);
+        return 3;
+    } else if(type == 'C') {
+        writer.write((uint8_t)(value.boolean ? 1 : 0));
+        return 2;
+    } else if(type == 'I') {
+        writer.write(value.i32);
+        return 5;
+    } else if(type == 'F') {
+        writer.write(value.f32);
+        return 5;
+    } else if(type == 'D') {
+        writer.write(value.f64);
+        return 9;
+    } else if(type == 'L') {
+        writer.write(value.i64);
+        return 9;
+    } else if(type == 'R' || type == 'S') {
+        writer.write((uint32_t)raw.size());
+        for(char c : raw) {
+            writer.write((uint8_t)c);
+        }
+        return raw.size() + 1;
+    } else {
+        for(auto e : values) {
+            if(type == 'f') writer.write(e.f32);
+            else if(type == 'd') writer.write(e.f64);
+            else if(type == 'l') writer.write((int64_t)(e.i64));
+            else if(type == 'i') writer.write(e.i32);
+            else if(type == 'b') writer.write((uint8_t)(e.boolean ? 1 : 0));
+            else throw std::string("Invalid property");
+        }
+        if(type == 'f') return values.size() * 4 + 1;
+        else if(type == 'd') return values.size() * 8 + 1;
+        else if(type == 'l') return values.size() * 8 + 1;
+        else if(type == 'i') return values.size() * 4 + 1;
+        else if(type == 'b') return values.size() * 1 + 1;
+        else throw std::string("Invalid property");
+    }
+}
+
 // primitive values
 FBXProperty::FBXProperty(int16_t a) { type = 'Y'; value.i16 = a; }
 FBXProperty::FBXProperty(bool a) { type = 'C'; value.boolean = a; }
@@ -259,6 +305,24 @@ string FBXProperty::to_string()
         }
         return s+"]";
     }
+    throw std::string("Invalid property");
+}
+
+uint32_t FBXProperty::getBytes()
+{
+    if(type == 'Y') return 2 + 1; // 2 for int16, 1 for type spec
+    else if(type == 'C') return 1 + 1;
+    else if(type == 'I') return 4 + 1;
+    else if(type == 'F') return 4 + 1;
+    else if(type == 'D') return 8 + 1;
+    else if(type == 'L') return 8 + 1;
+    else if(type == 'R') return raw.size() + 5;
+    else if(type == 'S') return raw.size() + 5;
+    else if(type == 'f') return values.size() * 4 + 1;
+    else if(type == 'd') return values.size() * 8 + 1;
+    else if(type == 'l') return values.size() * 8 + 1;
+    else if(type == 'i') return values.size() * 4 + 1;
+    else if(type == 'b') return values.size() * 1 + 1;
     throw std::string("Invalid property");
 }
 

@@ -5,6 +5,7 @@ using std::string;
 using std::cout;
 using std::endl;
 using std::ifstream;
+using std::ofstream;
 using std::uint32_t;
 using std::uint8_t;
 
@@ -27,7 +28,25 @@ void FBXDocument::read(string fname)
     if (file.is_open()) {
         read(file);
     } else {
-        throw "Cannot read from file: \"" + fname + "\"";
+        throw std::string("Cannot read from file: \"" + fname + "\"");
+    }
+    file.close();
+}
+
+void FBXDocument::write(string fname)
+{
+    ofstream file;
+
+    // buffer
+    int bufferSize = 1 << 16;
+    char buffer[bufferSize];
+    file.rdbuf()->pubsetbuf(buffer, bufferSize);
+
+    file.open(fname, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        write(file);
+    } else {
+        throw std::string("Cannot write to file: \"" + fname + "\"");
     }
     file.close();
 }
@@ -65,6 +84,24 @@ void FBXDocument::read(std::ifstream &input)
     } while(true);
 }
 
+void FBXDocument::write(std::ofstream &output)
+{
+    Writer writer(&output);
+    writer.write("Kaydara FBX Binary  ");
+    writer.write((uint8_t) 0);
+    writer.write((uint8_t) 0x1A);
+    writer.write((uint8_t) 0);
+    writer.write(version);
+
+    uint32_t offset = 27; // magic: 21+2, version: 4
+    for(FBXNode node : nodes) {
+        offset += node.write(output, offset);
+    }
+    FBXNode nullNode;
+    offset += nullNode.write(output, offset);
+    // footer... :/
+}
+
 void FBXDocument::createBasicStructure()
 {
     FBXNode headerExtension("FBXHeaderExtension");
@@ -81,13 +118,12 @@ void FBXDocument::createBasicStructure()
         creationTimeStamp.addPropertyNode("Minute", (int32_t) 11);
         creationTimeStamp.addPropertyNode("Second", (int32_t) 46);
         creationTimeStamp.addPropertyNode("Millisecond", (int32_t) 917);
-        headerExtension.children.push_back(creationTimeStamp);
+        headerExtension.addChild(creationTimeStamp);
     }
     headerExtension.addPropertyNode("Creator", "Blender (stable FBX IO) - 2.78 (sub 0) - 3.7.7");
     {
         FBXNode sceneInfo("SceneInfo");
         sceneInfo.addProperty(std::vector<uint8_t>({'G','l','o','b','a','l','I','n','f','o',0,1,'S','c','e','n','e','I','n','f','o'}), 'S');
-        //sceneInfo.addProperty("GlobalInfo\x00\x01SceneInfo");
         sceneInfo.addProperty("UserData");
         sceneInfo.addPropertyNode("Type", "UserData");
         sceneInfo.addPropertyNode("Version", 100);
@@ -100,7 +136,7 @@ void FBXDocument::createBasicStructure()
             metadata.addPropertyNode("Keywords", "");
             metadata.addPropertyNode("Revision", "");
             metadata.addPropertyNode("Comment", "");
-            sceneInfo.children.push_back(metadata);
+            sceneInfo.addChild(metadata);
         }
         {
             FBXNode properties("Properties70");
@@ -111,7 +147,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("Url");
                 p.addProperty("");
                 p.addProperty("/foobar.fbx");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -120,7 +156,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("Url");
                 p.addProperty("");
                 p.addProperty("/foobar.fbx");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -128,7 +164,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("Compound");
                 p.addProperty("");
                 p.addProperty("");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -137,7 +173,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("Blender Foundation");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -146,7 +182,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("Blender (stable FBX IO)");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -155,7 +191,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("2.78 (sub 0)");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -164,7 +200,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("01/01/1970 00:00:00.000");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -173,7 +209,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("/foobar.fbx");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -181,7 +217,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("Compound");
                 p.addProperty("");
                 p.addProperty("");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -190,7 +226,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("Blender Foundation");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -199,7 +235,7 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("Blender (stable FBX IO)");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
             {
                 FBXNode p("P");
@@ -208,11 +244,11 @@ void FBXDocument::createBasicStructure()
                 p.addProperty("");
                 p.addProperty("");
                 p.addProperty("01/01/1970 00:00:00.000");
-                properties.children.push_back(p);
+                properties.addChild(p);
             }
-            sceneInfo.children.push_back(properties);
+            sceneInfo.addChild(properties);
         }
-        headerExtension.children.push_back(sceneInfo);
+        headerExtension.addChild(sceneInfo);
     }
     nodes.push_back(headerExtension);
 

@@ -11,6 +11,8 @@ public:
     FBXDocument();
     void read(std::ifstream &input);
     void read(std::string fname);
+    void write(std::string fname);
+    void write(std::ofstream &output);
 
     void createBasicStructure();
 

@@ -34,6 +34,25 @@ namespace fbx {
         char *buffer;
         uint32_t i;
     };
+    class Writer {
+    public:
+        Writer(std::ofstream *output);
+
+        void write(std::uint8_t);
+        void write(std::int8_t);
+        void write(std::uint16_t);
+        void write(std::int16_t);
+        void write(std::uint32_t);
+        void write(std::int32_t);
+        void write(std::uint64_t);
+        void write(std::int64_t);
+        void write(std::string);
+        void write(float);
+        void write(double);
+    private:
+        void putc(uint8_t);
+        std::ofstream *ofstream;
+    };
 }
 
 #endif // FBXUTIL_H

@@ -42,12 +42,15 @@ public:
     FBXProperty(const std::string);
     FBXProperty(const char *);
 
+    uint32_t write(std::ofstream &output);
+
     std::string to_string();
     char getType();
 
     bool is_array();
+    uint32_t getBytes();
 private:
-    char type;
+    uint8_t type;
     FBXPropertyValue value;
     std::vector<uint8_t> raw;
     std::vector<FBXPropertyValue> values;

@@ -29,7 +29,7 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
     bytes += 13 + nameLength;
 
     for(uint32_t i = 0; i < numProperties; i++) {
-        properties.push_back(FBXProperty(input));
+        addProperty(FBXProperty(input));
     }
     bytes += propertyListLength;
 
@@ -37,8 +37,37 @@ uint32_t FBXNode::read(std::ifstream &input, uint32_t start_offset)
         FBXNode child;
         bytes += child.read(input, start_offset + bytes);
         if(child.isNull()) break;
-        children.push_back(std::move(child));
+        addChild(std::move(child));
     }
+    return bytes;
+}
+
+uint32_t FBXNode::write(std::ofstream &output, uint32_t start_offset)
+{
+    Writer writer(&output);
+
+    uint32_t propertyListLength = 0;
+    for(auto prop : properties) propertyListLength += prop.getBytes();
+    uint32_t bytes = 13 + name.length() + propertyListLength;
+    for(auto child : children) bytes += child.getBytes();
+
+    if(children.size() > 0) bytes += 13; // terminating null record
+    if(bytes != getBytes()) throw std::string("bytes != getBytes()");
+    writer.write(start_offset + bytes); // endOffset
+    writer.write((uint32_t) properties.size()); // numProperties
+    writer.write(propertyListLength); // propertyListLength
+    writer.write((uint8_t) name.length());
+    writer.write(name);
+
+    bytes = 13 + name.length() + propertyListLength;
+
+    for(auto prop : properties) prop.write(output);
+    for(auto child : children) bytes += child.write(output,  start_offset + bytes);
+    if(children.size() > 0) {
+        FBXNode nullNode;
+        bytes += nullNode.write(output, start_offset + bytes - 13);
+    }
+
     return bytes;
 }
 
@@ -82,37 +111,53 @@ bool FBXNode::isNull()
 }
 
 // primitive values
-void FBXNode::addProperty(int16_t v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(bool v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(int32_t v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(float v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(double v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(int64_t v) { properties.push_back(FBXProperty(v)); }
+void FBXNode::addProperty(int16_t v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(bool v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(int32_t v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(float v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(double v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(int64_t v) { addProperty(FBXProperty(v)); }
 // arrays
-void FBXNode::addProperty(const std::vector<bool> v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(const std::vector<int32_t> v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(const std::vector<float> v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(const std::vector<double> v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(const std::vector<int64_t> v) { properties.push_back(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<bool> v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<int32_t> v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<float> v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<double> v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<int64_t> v) { addProperty(FBXProperty(v)); }
 // raw / string
-void FBXNode::addProperty(const std::vector<uint8_t> v, uint8_t type) { properties.push_back(FBXProperty(v, type)); }
-void FBXNode::addProperty(const std::string v) { properties.push_back(FBXProperty(v)); }
-void FBXNode::addProperty(const char *v) { properties.push_back(FBXProperty(v)); }
+void FBXNode::addProperty(const std::vector<uint8_t> v, uint8_t type) { addProperty(FBXProperty(v, type)); }
+void FBXNode::addProperty(const std::string v) { addProperty(FBXProperty(v)); }
+void FBXNode::addProperty(const char *v) { addProperty(FBXProperty(v)); }
+
+void FBXNode::addProperty(FBXProperty prop) { properties.push_back(prop); }
 
 
-void FBXNode::addPropertyNode(const std::string name, int16_t v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, bool v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, int32_t v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, float v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, double v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, int64_t v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<bool> v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<int32_t> v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<float> v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<double> v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<int64_t> v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::vector<uint8_t> v, uint8_t type) { FBXNode n(name); n.addProperty(v, type); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const std::string v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
-void FBXNode::addPropertyNode(const std::string name, const char *v) { FBXNode n(name); n.addProperty(v); children.push_back(n); }
+void FBXNode::addPropertyNode(const std::string name, int16_t v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, bool v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, int32_t v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, float v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, double v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, int64_t v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<bool> v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<int32_t> v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<float> v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<double> v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<int64_t> v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::vector<uint8_t> v, uint8_t type) { FBXNode n(name); n.addProperty(v, type); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const std::string v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+void FBXNode::addPropertyNode(const std::string name, const char *v) { FBXNode n(name); n.addProperty(v); addChild(n); }
+
+void FBXNode::addChild(FBXNode child) { children.push_back(child); }
+
+uint32_t FBXNode::getBytes() {
+    uint32_t bytes = 13 + name.length();
+    for(auto child : children) {
+        bytes += child.getBytes();
+    }
+    for(auto prop : properties) {
+        bytes += prop.getBytes();
+    }
+    if(children.size() > 0) bytes += 13;
+    return bytes;
+}
 
 } // namespace fbx

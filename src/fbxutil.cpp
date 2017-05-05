@@ -163,4 +163,111 @@ void Reader::read(char *s, uint32_t n)
     }
 }
 
+Writer::Writer(std::ofstream *output):ofstream(output){}
+
+void Writer::putc(uint8_t c)
+{
+    (*ofstream) << c;
+}
+
+void Writer::write(std::uint8_t a)
+{
+    putc(a);
+}
+
+void Writer::write(std::int8_t a)
+{
+    putc(a);
+}
+
+void Writer::write(std::uint16_t a)
+{
+    putc(a);
+    putc(a >> 8);
+}
+
+void Writer::write(std::int16_t _a)
+{
+    uint16_t a = *(int16_t*)((char*) &_a);
+    putc(a);
+    putc(a >> 8);
+}
+
+void Writer::write(std::uint32_t a)
+{
+    putc(a);
+    putc(a >> 8);
+    putc(a >> 16);
+    putc(a >> 24);
+}
+
+void Writer::write(std::int32_t _a)
+{
+    uint32_t a = *(uint32_t*)((char*) &_a);
+    putc(a);
+    putc(a >> 8);
+    putc(a >> 16);
+    putc(a >> 24);
+}
+
+void Writer::write(std::uint64_t a)
+{
+    putc(a);
+    putc(a >> 8);
+    putc(a >> 16);
+    putc(a >> 24);
+    putc(a >> 32);
+    putc(a >> 40);
+    putc(a >> 48);
+    putc(a >> 56);
+}
+
+void Writer::write(std::int64_t _a)
+{
+    uint64_t a = *(uint64_t*)((char*) &_a);
+    putc(a);
+    putc(a >> 8);
+    putc(a >> 16);
+    putc(a >> 24);
+    putc(a >> 32);
+    putc(a >> 40);
+    putc(a >> 48);
+    putc(a >> 56);
+}
+
+void Writer::write(std::string a)
+{
+    for(char c : a) {
+        putc(c);
+    }
+}
+
+void Writer::write(float a)
+{
+    char *c = (char *)(&a);
+    if(isLittleEndian()) {
+        for(int i = 0; i < 4; i++) {
+            putc(c[i]);
+        }
+    } else {
+        for(int i = 3; i >= 0; i--) {
+            putc(c[i]);
+        }
+    }
+}
+
+void Writer::write(double a)
+{
+    char *c = (char *)(&a);
+    if(isLittleEndian()) {
+        for(int i = 0; i < 8; i++) {
+            putc(c[i]);
+        }
+    } else {
+        for(int i = 7; i >= 0; i--) {
+            putc(c[i]);
+        }
+    }
+}
+
 } // namespace fbx

@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
 
     } catch(string s) {
         cerr << "ERROR: " << s << endl;
+        return 2;
     }
     return 0;
 }
