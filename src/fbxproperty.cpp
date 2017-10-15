@@ -263,6 +263,8 @@ string FBXProperty::to_string()
         string s("\"");
         for(uint8_t c : raw) {
             if(c == '\\') s += "\\\\";
+            else if(c == '"') s += "\\\"";
+            else if(c == '\n') s += "\\\\n";
             else if(c >= 32 && c <= 126) s += c;
             else s = s + "\\u00" + base16Number(c);
         }
