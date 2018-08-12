@@ -100,9 +100,9 @@ FBXProperty::FBXProperty(std::ifstream &input)
             uint8_t compressedBuffer[compressedLength];
             reader.read((char*)compressedBuffer, compressedLength);
 
-            uint64_t destLen = uncompressedLength;
-            uint64_t srcLen = compressedLength;
-            uncompress2(decompressedBuffer, &destLen, compressedBuffer, &srcLen);
+            auto destLen = static_cast<unsigned long>(uncompressedLength);
+            auto srcLen = static_cast<unsigned long>(compressedLength);
+            uncompress(decompressedBuffer, &destLen, compressedBuffer, srcLen);
 
             if(srcLen != compressedLength) throw std::string("compressedLength does not match data");
             if(destLen != uncompressedLength) throw std::string("uncompressedLength does not match data");
@@ -263,6 +263,8 @@ string FBXProperty::to_string()
         string s("\"");
         for(uint8_t c : raw) {
             if(c == '\\') s += "\\\\";
+            else if(c == '"') s += "\\\"";
+            else if(c == '\n') s += "\\\\n";
             else if(c >= 32 && c <= 126) s += c;
             else s = s + "\\u00" + base16Number(c);
         }
