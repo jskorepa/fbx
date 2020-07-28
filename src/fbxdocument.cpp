@@ -19,10 +19,12 @@ void FBXDocument::read(string fname)
 {
     ifstream file;
 
-    // buffer
-    int bufferSize = 1 << 16;
-    char buffer[bufferSize];
-    file.rdbuf()->pubsetbuf(buffer, bufferSize);
+	// buffer
+	int bufferSize = 1 << 16;
+	char *buffer;
+	buffer = (char *)malloc(sizeof(char) * bufferSize);
+	file.rdbuf()->pubsetbuf(buffer, bufferSize);
+	free(buffer);
 
     file.open(fname, std::ios::in | std::ios::binary);
     if (file.is_open()) {
@@ -37,10 +39,12 @@ void FBXDocument::write(string fname)
 {
     ofstream file;
 
-    // buffer
-    int bufferSize = 1 << 16;
-    char buffer[bufferSize];
-    file.rdbuf()->pubsetbuf(buffer, bufferSize);
+	// buffer
+	int bufferSize = 1 << 16;
+	char *buffer;
+	buffer = (char *)malloc(sizeof(char) * bufferSize);
+	file.rdbuf()->pubsetbuf(buffer, bufferSize);
+	free(buffer);
 
     file.open(fname, std::ios::out | std::ios::binary);
     if (file.is_open()) {

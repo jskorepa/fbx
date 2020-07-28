@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <iostream>
-
+#include <string>
 #include "fbxdocument.h"
 
 using std::cout;

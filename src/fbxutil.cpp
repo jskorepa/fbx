@@ -99,10 +99,13 @@ uint64_t Reader::readUint64()
 
 std::string Reader::readString(uint32_t length)
 {
-    char buffer[length + 1];
-    buffer[length] = 0;
-    if(length) read(buffer, length);
-    return std::string(buffer);
+	char *buffer;
+	buffer = (char *)malloc(sizeof(char) * (length + 1));
+	buffer[length] = 0;
+	if (length) read(buffer, length);
+	std::string s = std::string(buffer);
+	free(buffer);
+	return s;
 }
 
 float Reader::readFloat()
