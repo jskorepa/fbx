@@ -301,4 +301,18 @@ void FBXDocument::print()
     cout << "\n  ]\n}" << endl;
 }
 
+void FBXDocument::log(ofstream &output)
+{
+	output << "{\n";
+	output << "  \"version\": " << getVersion() << ",\n";
+	output << "  \"children\": [\n";
+	bool hasPrev = false;
+	for (auto node : nodes) {
+		if (hasPrev) output << ",\n";
+		node.log("    ", output);
+		hasPrev = true;
+	}
+	output << "\n  ]\n}" << endl;
+}
+
 } // namespace fbx

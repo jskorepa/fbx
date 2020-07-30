@@ -122,6 +122,35 @@ void FBXNode::print(std::string prefix)
 
 }
 
+void FBXNode::log(std::string prefix, std::ofstream &output)
+{
+	output << prefix << "{ \"name\": \"" << name << "\"" << (properties.size() + children.size() > 0 ? ",\n" : "\n");
+	if (properties.size() > 0) {
+		output << prefix << "  \"properties\": [\n";
+		bool hasPrev = false;
+		for (FBXProperty prop : properties) {
+			if (hasPrev) output << ",\n";
+			output << prefix << "    { \"type\": \"" << prop.getType() << "\", \"value\": " << prop.to_string() << " }";
+			hasPrev = true;
+		}
+		output << "\n";
+		output << prefix << "  ]" << (children.size() > 0 ? ",\n" : "\n");
+	}
+
+	if (children.size() > 0) {
+		output << prefix << "  \"children\": [\n";
+		bool hasPrev = false;
+		for (FBXNode node : children) {
+			if (hasPrev) output << ",\n";
+			node.log(prefix + "    ", output);
+			hasPrev = true;
+		}
+		output << "\n";
+		output << prefix << "  ]\n";
+	}
+	output << prefix << "}";
+}
+
 bool FBXNode::isNull()
 {
     return children.size() == 0

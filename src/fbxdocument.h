@@ -2,6 +2,8 @@
 #define FBXDOCUMENT_H
 
 #include "fbxnode.h"
+#include <fstream>
+using namespace std;
 
 namespace fbx {
 
@@ -20,6 +22,7 @@ public:
 
     std::uint32_t getVersion();
     void print();
+	void log(ofstream &output);
 
 private:
     std::uint32_t version;
