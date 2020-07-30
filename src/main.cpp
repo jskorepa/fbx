@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <iostream>
-
+#include <string>
 #include "fbxdocument.h"
 
 using std::cout;
@@ -19,7 +19,18 @@ int main(int argc, char** argv)
         std::cout << "Reading " << argv[1] << std::endl;
         doc.read(argv[1]);
 
-        //doc.print();
+		/////output fbx to txt/////////
+		{
+		std::string filename = argv[1];
+		filename = filename.substr(0, filename.rfind(".")) + ".txt";
+
+		ofstream f;
+		f.open(filename, ios::out);//開啟檔案
+        doc.log(f);
+		f.close();//關閉檔案
+		}
+		/////output fbx to txt/////////
+
         std::cout << "Writing test.fbx" << std::endl;
         doc.write("test.fbx");
     } catch(std::string e) {

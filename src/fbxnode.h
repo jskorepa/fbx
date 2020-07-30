@@ -2,6 +2,7 @@
 #define FBXNODE_H
 
 #include "fbxproperty.h"
+#include <fstream>
 
 namespace fbx {
 
@@ -14,6 +15,7 @@ public:
     std::uint32_t read(std::ifstream &input, uint32_t start_offset);
     std::uint32_t write(std::ofstream &output, uint32_t start_offset);
     void print(std::string prefix="");
+	void log(std::string, std::ofstream &output);
     bool isNull();
 
     void addProperty(int16_t);
